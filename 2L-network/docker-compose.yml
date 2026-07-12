@@ -1,0 +1,119 @@
+networks:
+
+  2GL_Network:
+
+    driver: bridge
+
+
+
+services:
+
+  database:
+
+    image: mysql:8.0
+
+    container_name: db_container
+
+    environment:
+
+      MYSQL_ROOT_PASSWORD: "2GL@345"
+
+      MYSQL_DATABASE: project_db
+
+    ports:
+
+      - "3306:3306"
+
+    volumes:
+
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    networks:
+
+      - 2GL_Network
+
+    healthcheck:
+
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p2GL@345"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 5
+
+
+
+  python_server:
+
+    build: ./python_server
+
+    container_name: py_server_container
+
+    ports:
+
+      - "5001:5001"
+
+    depends_on:
+
+      database:
+
+        condition: service_healthy
+
+    networks:
+
+      - 2GL_Network
+
+
+
+  python_client:
+
+    build: ./python_client
+
+    container_name: py_client_container
+
+    depends_on:
+
+      - python_server
+
+    networks:
+
+      - 2GL_Network
+
+
+
+  c_server:
+
+    build: ./c_server
+
+    container_name: c_server_container
+
+    ports:
+
+      - "5002:5002"
+
+    depends_on:
+
+      database:
+
+        condition: service_healthy
+
+    networks:
+
+      - 2GL_Network
+
+
+
+  c_client:
+
+    build: ./c_client
+
+    container_name: c_client_container
+
+    depends_on:
+
+      - c_server
+
+    networks:
+
+      - 2GL_Network
